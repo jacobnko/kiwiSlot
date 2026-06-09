@@ -1,0 +1,20 @@
+# Render Blueprint — deploys KiwiSlot as a free Docker web service.
+# Docs: https://render.com/docs/blueprint-spec
+#
+# The database is a free Neon Postgres (provisioned separately); set DATABASE_URL in the
+# Render dashboard with your Neon connection string (include ?sslmode=require).
+services:
+  - type: web
+    name: kiwislot-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    # Render injects its own PORT; the app reads process.env.PORT.
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: JWT_SECRET
+        generateValue: true # Render generates a strong secret
+      - key: JWT_EXPIRES_IN
+        value: 1d
+      - key: DATABASE_URL
+        sync: false # set manually to the Neon connection string (keep it secret)

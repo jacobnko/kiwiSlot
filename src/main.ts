@@ -14,6 +14,7 @@ async function bootstrap() {
       transform: true, // turn plain JSON into typed DTO instances
     }),
   );
-  await app.listen(process.env.PORT ?? 3000);
+  // Bind to 0.0.0.0 so the app is reachable inside containers / on cloud hosts (Render).
+  await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
 }
 void bootstrap();
