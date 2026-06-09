@@ -2,6 +2,11 @@
 
 [![CI](https://github.com/jacobnko/kiwiSlot/actions/workflows/ci.yml/badge.svg)](https://github.com/jacobnko/kiwiSlot/actions/workflows/ci.yml)
 
+**Live demo:** https://kiwislot-api.onrender.com/api/v1 — try `GET /api/v1/health`.
+**Interactive API docs (Swagger):** https://kiwislot-api.onrender.com/api/docs — explore and
+call every endpoint in the browser (use **Authorize** to paste a JWT for protected routes).
+_(Hosted on Render's free tier, so the first request after idle may be slow due to cold start.)_
+
 KiwiSlot is a booking/reservation backend for small businesses such as cafés and salons.
 It is **multi-tenant**: many independent businesses share one deployment, each with its
 data fully isolated from the others. The project is built to demonstrate ownership of a
@@ -69,6 +74,30 @@ erDiagram
     }
 ```
 
+## Example request flow
+
+```bash
+BASE=https://kiwislot-api.onrender.com/api/v1   # or http://localhost:3333/api/v1
+
+# 1. Register a business + its first OWNER -> returns a JWT
+TOKEN=$(curl -s -X POST $BASE/auth/register \
+  -H 'Content-Type: application/json' \
+  -d '{"businessName":"Kiwi Cafe","email":"owner@kiwi.test","password":"supersecret"}' \
+  | sed -E 's/.*"accessToken":"([^"]+)".*/\1/')
+
+# 2. Create a service (OWNER only) and a customer
+SERVICE=$(curl -s -X POST $BASE/services -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"Haircut","durationMinutes":30,"price":25}')
+CUSTOMER=$(curl -s -X POST $BASE/customers -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' -d '{"name":"Jane Doe"}')
+
+# 3. Book it (use the ids from steps above). A second overlapping booking returns 409.
+curl -s -X POST $BASE/bookings -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"serviceId":"<SERVICE_ID>","customerId":"<CUSTOMER_ID>","startTime":"2026-07-01T09:00:00.000Z"}'
+```
+
 ## Tech stack
 - **NestJS** (TypeScript) — modular backend (modules / controllers / services / DI)
 - **PostgreSQL** + **Prisma** ORM
@@ -111,7 +140,8 @@ npx prisma migrate deploy   # or `npx prisma migrate dev` while developing
 npm run start:dev
 ```
 
-The API is served under `/api/v1` (e.g. `POST /api/v1/auth/register`).
+The API is served under `/api/v1` (e.g. `POST /api/v1/auth/register`). Interactive Swagger
+docs are at `http://localhost:3333/api/docs`.
 
 ### Tests
 
