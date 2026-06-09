@@ -85,7 +85,7 @@ erDiagram
 - [x] Phase 3 — Authorization & multi-tenancy
 - [x] Phase 4 — Services (CRUD)
 - [x] Phase 5 — Customers (create / list)
-- [ ] Phase 6 — Bookings (double-booking prevention)
+- [x] Phase 6 — Bookings (double-booking prevention)
 - [ ] Phase 7 — Tests
 - [ ] Phase 8 — Containerize & CI
 - [ ] Phase 9 — Deploy (Neon + Render)
@@ -106,3 +106,6 @@ _TBD — documented in Phase 0 (Docker Compose Postgres + `npm run start:dev`)._
 - **Money as `Decimal(10,2)`** — exact currency math in Postgres, no floating-point error.
 - **Cascade deletes from `Business`** keep tenant teardown clean; the "don't delete a
   booked service" rule lives in the service layer, not the FK.
+- **Double-booking prevented with a pessimistic lock** (`SELECT ... FOR UPDATE` on the
+  service inside a transaction). Verified race-free: 8 concurrent identical requests →
+  exactly one success. See `docs/adr/0003-double-booking-prevention.md`.
