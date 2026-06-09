@@ -1,0 +1,57 @@
+name: CI
+
+# Run on every push and pull request.
+on:
+  push:
+  pull_request:
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+
+    # Spin up a throwaway PostgreSQL for the e2e tests, mirroring local docker-compose.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: kiwislot
+          POSTGRES_PASSWORD: kiwislot_local_pw
+          POSTGRES_DB: kiwislot
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U kiwislot -d kiwislot"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://kiwislot:kiwislot_local_pw@localhost:5432/kiwislot?schema=public
+      JWT_SECRET: ci_test_secret
+      JWT_EXPIRES_IN: 1d
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Apply migrations
+        run: npx prisma migrate deploy
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm test
+
+      - name: E2E tests
+        run: npm run test:e2e
