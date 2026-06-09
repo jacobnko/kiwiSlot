@@ -1,13 +1,23 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
+import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { PrismaService } from './../src/prisma/prisma.service';
+
+// Shapes of the JSON responses we read (supertest types res.body as `any`).
+interface AuthResponse {
+  accessToken: string;
+  user: { role: string; businessId: string };
+}
+interface Entity {
+  id: string;
+}
 
 // End-to-end tests for the auth + booking flows against the real (Docker) database.
 // Each run uses a unique owner email and deletes its own business afterwards.
 describe('Auth + Booking (e2e)', () => {
-  let app: INestApplication;
+  let app: INestApplication<App>;
   let prisma: PrismaService;
 
   const createdBusinessIds: string[] = [];
@@ -51,13 +61,19 @@ describe('Auth + Booking (e2e)', () => {
   it('registers a business + owner and returns a JWT', async () => {
     const res = await http()
       .post('/api/v1/auth/register')
-      .send({ businessName: 'E2E Biz', email: ownerEmail, password, ownerName: 'E2E' })
+      .send({
+        businessName: 'E2E Biz',
+        email: ownerEmail,
+        password,
+        ownerName: 'E2E',
+      })
       .expect(201);
 
-    expect(res.body.accessToken).toBeDefined();
-    expect(res.body.user.role).toBe('OWNER');
-    token = res.body.accessToken;
-    createdBusinessIds.push(res.body.user.businessId);
+    const body = res.body as AuthResponse;
+    expect(body.accessToken).toBeDefined();
+    expect(body.user.role).toBe('OWNER');
+    token = body.accessToken;
+    createdBusinessIds.push(body.user.businessId);
   });
 
   it('logs in with the same credentials', async () => {
@@ -65,7 +81,7 @@ describe('Auth + Booking (e2e)', () => {
       .post('/api/v1/auth/login')
       .send({ email: ownerEmail, password })
       .expect(200);
-    expect(res.body.accessToken).toBeDefined();
+    expect((res.body as AuthResponse).accessToken).toBeDefined();
   });
 
   it('rejects login with a wrong password', () =>
@@ -80,14 +96,14 @@ describe('Auth + Booking (e2e)', () => {
       .set('Authorization', `Bearer ${token}`)
       .send({ name: 'Haircut', durationMinutes: 30, price: 25 })
       .expect(201);
-    serviceId = svc.body.id;
+    serviceId = (svc.body as Entity).id;
 
     const cust = await http()
       .post('/api/v1/customers')
       .set('Authorization', `Bearer ${token}`)
       .send({ name: 'Jane Doe' })
       .expect(201);
-    customerId = cust.body.id;
+    customerId = (cust.body as Entity).id;
   });
 
   it('creates a booking (happy path)', () =>
@@ -120,7 +136,7 @@ describe('Auth + Booking (e2e)', () => {
       .expect(201);
 
     const payload = {
-      serviceId: svc.body.id,
+      serviceId: (svc.body as Entity).id,
       customerId,
       startTime: '2026-08-01T14:00:00.000Z',
     };

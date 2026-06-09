@@ -33,7 +33,9 @@ describe('BookingsService (double-booking logic)', () => {
       booking: { findFirst: jest.fn(), create: jest.fn() },
     };
     // $transaction just runs the callback with our fake tx client.
-    prisma = { $transaction: jest.fn((cb) => cb(tx)) };
+    prisma = {
+      $transaction: jest.fn((cb: (client: typeof tx) => unknown) => cb(tx)),
+    };
     service = new BookingsService(prisma as unknown as PrismaService);
   });
 

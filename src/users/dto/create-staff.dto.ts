@@ -1,4 +1,10 @@
-import { IsEmail, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 
 // Body for POST /api/v1/users — an OWNER creates a STAFF user in their business.
 // Note: there is no businessId here; it always comes from the authenticated OWNER's token.

@@ -1,4 +1,12 @@
-import { IsInt, IsNumber, IsString, Max, MaxLength, Min, MinLength } from 'class-validator';
+import {
+  IsInt,
+  IsNumber,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+  MinLength,
+} from 'class-validator';
 
 // Body for POST /api/v1/services. No businessId — it comes from the OWNER's token.
 export class CreateServiceDto {

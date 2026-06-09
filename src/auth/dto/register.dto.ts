@@ -1,4 +1,10 @@
-import { IsEmail, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 
 // Body for POST /api/v1/auth/register — creates a Business and its first OWNER user.
 export class RegisterDto {
