@@ -86,7 +86,7 @@ erDiagram
 - [x] Phase 4 — Services (CRUD)
 - [x] Phase 5 — Customers (create / list)
 - [x] Phase 6 — Bookings (double-booking prevention)
-- [ ] Phase 7 — Tests
+- [x] Phase 7 — Tests
 - [ ] Phase 8 — Containerize & CI
 - [ ] Phase 9 — Deploy (Neon + Render)
 
