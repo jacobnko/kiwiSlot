@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { BookingStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
@@ -44,11 +49,21 @@ export class ServicesService {
     });
   }
 
-  // Delete only after confirming ownership.
-  // NOTE: the "can't delete a service that has bookings" rule is added in Phase 6,
-  // once bookings exist.
+  // Delete only after confirming ownership. Business rule: a service with active
+  // (CONFIRMED) bookings cannot be deleted, so we don't silently cascade-delete live
+  // appointments. Cancel or let them pass first.
   async remove(businessId: string, id: string) {
     await this.findOne(businessId, id); // throws 404 if not owned
+
+    const activeBookings = await this.prisma.booking.count({
+      where: { serviceId: id, status: BookingStatus.CONFIRMED },
+    });
+    if (activeBookings > 0) {
+      throw new ConflictException(
+        'Cannot delete a service that has confirmed bookings',
+      );
+    }
+
     await this.prisma.service.delete({ where: { id } });
     return { id };
   }
