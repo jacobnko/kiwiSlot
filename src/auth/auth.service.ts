@@ -5,14 +5,11 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Role, User } from '@prisma/client';
-import * as bcrypt from 'bcrypt';
+import { comparePassword, hashPassword } from '../common/security/password';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtPayload } from './types/jwt-payload';
-
-// Cost factor for bcrypt. Higher = slower = harder to brute-force. 12 is a good default.
-const BCRYPT_ROUNDS = 12;
 
 @Injectable()
 export class AuthService {
@@ -32,7 +29,7 @@ export class AuthService {
     }
 
     // 2. Never store the raw password — hash it (bcrypt embeds a per-user salt).
-    const passwordHash = await bcrypt.hash(dto.password, BCRYPT_ROUNDS);
+    const passwordHash = await hashPassword(dto.password);
 
     // 3. Create the Business and its first OWNER atomically: if the user insert
     //    fails, the business insert is rolled back too.
@@ -65,7 +62,7 @@ export class AuthService {
     // Use the same generic message whether the email or the password is wrong,
     // so we don't reveal which emails exist.
     const passwordOk =
-      user && (await bcrypt.compare(dto.password, user.passwordHash));
+      user && (await comparePassword(dto.password, user.passwordHash));
     if (!user || !passwordOk) {
       throw new UnauthorizedException('Invalid email or password');
     }
