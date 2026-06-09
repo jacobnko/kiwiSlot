@@ -1,5 +1,7 @@
 # KiwiSlot — a multi-tenant booking API for small businesses (NestJS · PostgreSQL · Prisma · Docker)
 
+[![CI](https://github.com/jacobnko/kiwiSlot/actions/workflows/ci.yml/badge.svg)](https://github.com/jacobnko/kiwiSlot/actions/workflows/ci.yml)
+
 KiwiSlot is a booking/reservation backend for small businesses such as cafés and salons.
 It is **multi-tenant**: many independent businesses share one deployment, each with its
 data fully isolated from the others. The project is built to demonstrate ownership of a
@@ -87,11 +89,57 @@ erDiagram
 - [x] Phase 5 — Customers (create / list)
 - [x] Phase 6 — Bookings (double-booking prevention)
 - [x] Phase 7 — Tests
-- [ ] Phase 8 — Containerize & CI
+- [x] Phase 8 — Containerize & CI
 - [ ] Phase 9 — Deploy (Neon + Render)
 
 ## Running locally
-_TBD — documented in Phase 0 (Docker Compose Postgres + `npm run start:dev`)._
+
+Prerequisites: Node 22+, Docker Desktop.
+
+```bash
+# 1. Start the local PostgreSQL
+docker compose up -d
+
+# 2. Configure env
+cp .env.example .env        # then edit secrets if you like
+
+# 3. Install deps + apply the schema
+npm ci
+npx prisma migrate deploy   # or `npx prisma migrate dev` while developing
+
+# 4. Run the API (defaults to http://localhost:3333)
+npm run start:dev
+```
+
+The API is served under `/api/v1` (e.g. `POST /api/v1/auth/register`).
+
+### Tests
+
+```bash
+npm test           # unit tests (mocked Prisma)
+npm run test:e2e   # e2e tests — requires the compose Postgres to be running
+```
+
+### Run the production image
+
+```bash
+docker build -t kiwislot-api:local .
+docker run --rm \
+  --network kiwislot-backend_default \
+  -e DATABASE_URL='postgresql://kiwislot:kiwislot_local_pw@postgres:5432/kiwislot?schema=public' \
+  -e JWT_SECRET='change_me' -e PORT=3333 -p 3334:3333 \
+  kiwislot-api:local
+```
+
+The container runs `prisma migrate deploy` then starts the server, so it migrates the database
+on boot. Because it's a self-contained image, it runs unchanged on AWS ECS / GCP Cloud Run as
+well — the host is just a detail.
+
+## CI
+
+GitHub Actions (`.github/workflows/ci.yml`) runs on every push/PR: it boots a `postgres:16`
+service container, then runs lint, unit tests, and e2e tests (including the concurrency
+double-booking test) against it.
 
 ## Key decisions & what I learned
 
