@@ -83,7 +83,7 @@ erDiagram
 - [x] Phase 1 — Data model (Prisma schema + migration + ERD)
 - [x] Phase 2 — Auth (register, login, JWT, bcrypt)
 - [x] Phase 3 — Authorization & multi-tenancy
-- [ ] Phase 4 — Services (CRUD)
+- [x] Phase 4 — Services (CRUD)
 - [ ] Phase 5 — Customers (create / list)
 - [ ] Phase 6 — Bookings (double-booking prevention)
 - [ ] Phase 7 — Tests
