@@ -90,7 +90,7 @@ erDiagram
 - [x] Phase 6 — Bookings (double-booking prevention)
 - [x] Phase 7 — Tests
 - [x] Phase 8 — Containerize & CI
-- [ ] Phase 9 — Deploy (Neon + Render)
+- [x] Phase 9 — Deploy (Neon + Render)
 
 ## Running locally
 
@@ -140,6 +140,32 @@ well — the host is just a detail.
 GitHub Actions (`.github/workflows/ci.yml`) runs on every push/PR: it boots a `postgres:16`
 service container, then runs lint, unit tests, and e2e tests (including the concurrency
 double-booking test) against it.
+
+## Deployment (free stack: Neon + Render)
+
+The app deploys as a Docker container with a managed Postgres — no paid hosting required.
+
+**1. Database — Neon (free Postgres):**
+1. Create a project at [neon.tech](https://neon.tech) and a database.
+2. Copy the connection string and append `?sslmode=require`, e.g.
+   `postgresql://USER:PASSWORD@ep-xxx.neon.tech/kiwislot?sslmode=require`.
+
+**2. API — Render (free web service):**
+- **With the Blueprint:** push this repo (it contains `render.yaml`), then in Render choose
+  **New → Blueprint** and point it at the repo. It provisions a free Docker web service with a
+  health check at `/api/v1/health`, generates `JWT_SECRET`, and leaves `DATABASE_URL` for you
+  to fill in with the Neon string.
+- **Manual:** New → Web Service → connect the repo → runtime **Docker** → plan **Free** →
+  set env vars `DATABASE_URL` (Neon), `JWT_SECRET`, `JWT_EXPIRES_IN=1d`.
+
+On boot the container runs `prisma migrate deploy` against Neon, then starts the server.
+Render injects `PORT`, which the app honors.
+
+> **Free-tier caveat:** Render free web services spin down after ~15 minutes of inactivity,
+> so the first request after idle is slow (cold start). Fine for a portfolio demo.
+
+Because this is a self-contained image, the same container runs unchanged on **AWS ECS** or
+**GCP Cloud Run** — the credibility comes from Docker + CI/CD, not the host.
 
 ## Key decisions & what I learned
 
