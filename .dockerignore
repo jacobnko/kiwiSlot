@@ -1,0 +1,22 @@
+# Keep the build context small and the image clean.
+node_modules
+dist
+coverage
+.git
+.gitignore
+.github
+*.log
+
+# Secrets / local-only files (env is provided at runtime, never baked in)
+.env
+.env.*
+
+# Claude / learning / docs files — not part of the runtime image
+.claude
+CLAUDE.md
+study.md
+docs
+
+# Docker files themselves
+Dockerfile
+.dockerignore
