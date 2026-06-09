@@ -1,0 +1,113 @@
+// KiwiSlot — Prisma schema
+// A multi-tenant booking backend. Every tenant-owned row carries a businessId so that
+// tenant isolation can be enforced with a simple `where: { businessId }` everywhere.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ----- Enums (stored as native PostgreSQL enums) -----
+
+enum Role {
+  OWNER // Manages staff + services
+  STAFF // Manages bookings + customers
+}
+
+enum BookingStatus {
+  CONFIRMED
+  CANCELLED
+}
+
+// ----- Models -----
+
+// The tenant. Everything else hangs off a Business.
+model Business {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // One business has many of each child. Deleting a business cascades to all its data.
+  users     User[]
+  services  Service[]
+  customers Customer[]
+  bookings  Booking[]
+}
+
+// A login identity that belongs to exactly one Business.
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique // Global login key: must resolve to a single user
+  passwordHash String // bcrypt hash, never the raw password
+  name         String?
+  role         Role     @default(OWNER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+}
+
+// A bookable offering owned by a Business (e.g. "Haircut", 30 min, $25.00).
+model Service {
+  id              String   @id @default(uuid())
+  name            String
+  durationMinutes Int // Used to derive a booking's end time
+  price           Decimal  @db.Decimal(10, 2) // Exact currency value, no float rounding
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  businessId String
+  business   Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  bookings   Booking[]
+
+  @@index([businessId])
+}
+
+// A person who books, owned by a Business.
+model Customer {
+  id        String   @id @default(uuid())
+  name      String
+  email     String?
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  businessId String
+  business   Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  bookings   Booking[]
+
+  @@index([businessId])
+}
+
+// A Service booked for a Customer at a start/end time.
+// The core business rule (Phase 6): no two CONFIRMED bookings for the same Service overlap.
+model Booking {
+  id        String        @id @default(uuid())
+  startTime DateTime
+  endTime   DateTime
+  status    BookingStatus @default(CONFIRMED)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  // businessId is stored directly (denormalized) so tenant filtering never needs a join.
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  serviceId String
+  service   Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  // Supports the overlap lookup "bookings for this service around this time".
+  @@index([serviceId, startTime])
+}
