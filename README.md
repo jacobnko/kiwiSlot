@@ -2,8 +2,8 @@
 
 [![CI](https://github.com/jacobnko/kiwiSlot/actions/workflows/ci.yml/badge.svg)](https://github.com/jacobnko/kiwiSlot/actions/workflows/ci.yml)
 
-**Live demo:** https://kiwislot-api.onrender.com/api/v1 — try `GET /api/v1/health`.
-**Interactive API docs (Swagger):** https://kiwislot-api.onrender.com/api/docs — explore and
+**Live demo:** https://kiwislot.jacobko.app/api/v1 — try `GET /api/v1/health`.
+**Interactive API docs (Swagger):** https://kiwislot.jacobko.app/api/docs — explore and
 call every endpoint in the browser (use **Authorize** to paste a JWT for protected routes).
 _(Hosted on Render's free tier, so the first request after idle may be slow due to cold start.)_
 
@@ -77,7 +77,7 @@ erDiagram
 ## Example request flow
 
 ```bash
-BASE=https://kiwislot-api.onrender.com/api/v1   # or http://localhost:3333/api/v1
+BASE=https://kiwislot.jacobko.app/api/v1   # or http://localhost:3333/api/v1
 
 # 1. Register a business + its first OWNER -> returns a JWT
 TOKEN=$(curl -s -X POST $BASE/auth/register \
